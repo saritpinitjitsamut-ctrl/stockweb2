@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>พิมพ์ประวัติการผลิต | Production History Print</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-body: #050811;
+            --bg-card: rgba(15, 23, 42, 0.85);
+            --primary: #f59e0b;
+            --primary-bright: #fbbf24;
+            --text: #ffffff;
+            --muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: var(--bg-body);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(31, 41, 55, 1) 0%, var(--bg-body) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-left h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary-bright);
+        }
+
+        .header-left p {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.55rem 1.1rem;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #d97706);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-control {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .report-table th {
+            text-align: left;
+            padding: 0.8rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .report-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: top;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-started {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .badge-done {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-cancel {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .skutext {
+            font-family: monospace;
+            color: #60a5fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--muted);
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                padding: 0;
+                margin: 0;
+                min-height: auto;
+            }
+
+            body::before {
+                display: none;
+            }
+
+            .container {
+                background: white;
+                border: none;
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+                border-radius: 0;
+            }
+
+            .header-left h1 {
+                color: black;
+            }
+
+            .header-left p {
+                color: #555;
+            }
+
+            .controls,
+            .btn,
+            .nav-btn {
+                display: none !important;
+            }
+
+            .report-table th {
+                border-bottom: 2px solid #ccc;
+                color: black;
+            }
+
+            .report-table td {
+                border-bottom: 1px solid #eee;
+            }
+
+            .badge {
+                border: 1px solid #ccc;
+                color: black !important;
+                background: transparent !important;
+            }
+
+            .skutext {
+                color: #333;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>📑 รายงานประวัติการผลิต</h1>
+                <p>บันทึกประวัติการเปลี่ยนสถานะการผลิตล่าสุด</p>
+            </div>
+            <div class="controls">
+                <input type="date" id="filterDate" class="form-control" onchange="loadData()">
+                <select id="filterAction" class="form-control" onchange="loadData()">
+                    <option value="ผลิตสำเร็จ">ผลิตสำเร็จแล้ว (เสร็จสิ้น)</option>
+                    <option value="เริ่มผลิต">กำลังผลิต (กำลังทำ)</option>
+                    <option value="ยกเลิก">ยกเลิกออเดอร์</option>
+
+                    <option value="ทุกสถานะ">ทุกสถานะทั้งหมด</option>
+                </select>
+                <button class="btn btn-outline" onclick="window.history.back()">← กลับ</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ พิมพ์เอกสาร</button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>ลำดับ</th>
+                        <th>วัน-เวลา</th>
+                        <th>เลขออเดอร์</th>
+                        <th>ข้อมูลสินค้า</th>
+                        <th style="text-align:center;">สถานะ</th>
+                        <th style="text-align:center;">จำนวน (ชิ้น)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="5" style="text-align:center; padding:2rem;">⏳ กำลังโหลดข้อมูล...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // กำหนดวันที่เริ่มต้นให้เป็นวันนี้
+        document.getElementById('filterDate').valueAsDate = new Date();
+
+        // Supabase Connection
+        const SUPABASE_URL = 'https://aozzwdaujwuefbkrnbbd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvenp3ZGF1and1ZWZia3JuYmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDM3NjksImV4cCI6MjA5NjE3OTc2OX0.KkjFlJcyV-Mi_DJE8iIEr28cv84Eq-OXkVhLr20f5es';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;">⏳ กำลังโหลด...</td></tr>';
+
+            const filterDate = document.getElementById('filterDate').value;
+            const filterAction = document.getElementById('filterAction').value;
+
+            try {
+                let query = db.from('production_logs').select(`
+            id, created_at, action, order_number,
+            stock_orders (product_code, product_name, product_size, slots, pattern, quantity)
+        `).order('created_at', { ascending: false }).limit(200);
+
+                if (filterDate) {
+                    query = query.gte('created_at', filterDate + 'T00:00:00')
+                        .lte('created_at', filterDate + 'T23:59:59');
+                }
+                if (filterAction && filterAction !== 'ทุกสถานะ') {
+                    query = query.ilike('action', `%${filterAction}%`);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่มีประวัติการผลิตในวันนี้</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.map((log, index) => {
+                    const d = new Date(log.created_at);
+                    const dateStr = d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH');
+
+                    let actionBadgeClass = 'badge-started';
+                    if (log.action.includes('สำเร็จ') || log.action.includes('จัดส่ง')) actionBadgeClass = 'badge-done';
+                    if (log.action.includes('ยกเลิก')) actionBadgeClass = 'badge-cancel';
+
+                    let actionBadge = `<span class="badge ${actionBadgeClass}">${log.action}</span>`;
+
+                    let orderDetails = '-';
+                    let qtyStr = '1';
+
+                    if (log.stock_orders) {
+                        const o = Array.isArray(log.stock_orders) ? log.stock_orders[0] : log.stock_orders;
+                        if (o) {
+                            qtyStr = o.quantity || 1;
+                            orderDetails = `
+                        <div style="font-weight:600;">${o.product_name || '-'}</div>
+                        ${o.product_code ? `<span class="skutext">[${o.product_code}]</span> ` : ''}
+                        ${o.product_size ? `ไซส์ ${o.product_size} ` : ''}
+                        ${o.pattern ? `ลาย ${o.pattern} ` : ''}
+                        ${o.slots ? `(${o.slots}ช่อง) ` : ''}
+                    `;
+                        }
+                    }
+
+                    return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${dateStr}</td>
+                    <td><div style="font-family:monospace; background:rgba(255,255,255,0.05); display:inline-block; padding:2px 6px; border-radius:4px;">${log.order_number || '-'}</div></td>
+                    <td>${orderDetails}</td>
+                    <td style="text-align:center;">${actionBadge}</td>
+                    <td style="text-align:center;"><span style="font-weight:700; font-size:1.1rem; color:var(--primary-bright);">${qtyStr}</span></td>
+                </tr>
+            `;
+                }).join('');
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Load initial data
+        loadData();
+    </script>
+</body>
+
+</html>
